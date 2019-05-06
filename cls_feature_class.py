@@ -39,12 +39,12 @@ class FeatureClass:
 
         self._fs = 48000
         self._hop_len_s = 0.02
-        self._hop_len = int(self._fs * self._hop_len_s)
+        self._hop_len = int(self._fs * self._hop_len_s) # 960
         self._frame_res = self._fs / float(self._hop_len)
         self._nb_frames_1s = int(self._frame_res)
 
         self._win_len = 2 * self._hop_len
-        self._nfft = self._next_greater_power_of_2(self._win_len)
+        self._nfft = self._next_greater_power_of_2(self._win_len) # 2048
 
         self._dataset = dataset
         self._eps = np.spacing(np.float(1e-16))
@@ -73,7 +73,8 @@ class FeatureClass:
         self._ele_list = range(-40, 50, self._doa_resolution)
         self._height = len(self._ele_list)
 
-        self._audio_max_len_samples = 60 * self._fs  # TODO: Fix the audio synthesis code to always generate 60s of
+        self._audio_max_len_samples = 60 * self._fs  # 2880000
+        # TODO: Fix the audio synthesis code to always generate 60s of
         # audio. Currently it generates audio till the last active sound event, which is not always 60s long. This is a
         # quick fix to overcome that. We need this because, for processing and training we need the length of features
         # to be fixed.
@@ -88,8 +89,9 @@ class FeatureClass:
         if self._default_ele in self._ele_list:
             print('ERROR: chosen default_ele value {} should not exist in ele_list'.format(self._default_ele))
             exit()
-
-        self._max_frames = int(np.ceil(self._audio_max_len_samples / float(self._hop_len)))
+                                                
+                                                # 2880000                    # 960
+        self._max_frames = int(np.ceil(self._audio_max_len_samples / float(self._hop_len))) # =3000
 
     def _load_audio(self, audio_path):
         fs, audio = wav.read(audio_path)
@@ -108,13 +110,13 @@ class FeatureClass:
 
     def _spectrogram(self, audio_input):
         _nb_ch = audio_input.shape[1]
-        nb_bins = self._nfft // 2
+        nb_bins = self._nfft // 2 # 1024
         spectra = np.zeros((self._max_frames, nb_bins, _nb_ch), dtype=complex)
         for ch_cnt in range(_nb_ch):
             stft_ch = librosa.core.stft(audio_input[:, ch_cnt], n_fft=self._nfft, hop_length=self._hop_len,
                                         win_length=self._win_len, window='hann')
-            spectra[:, :, ch_cnt] = stft_ch[1:, :self._max_frames].T
-        return spectra
+            spectra[:, :, ch_cnt] = stft_ch[1:, :self._max_frames].T # Don't want zeroth bin
+        return spectra # 3000 x 1024 x 4
 
     def _extract_spectrogram_for_file(self, audio_filename):
         audio_in, fs = self._load_audio(os.path.join(self._aud_dir, audio_filename))
