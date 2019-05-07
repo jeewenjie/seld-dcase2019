@@ -12,7 +12,7 @@ from keras.optimizers import Adam
 import keras
 keras.backend.set_image_data_format('channels_first')
 from IPython import embed
-
+import numpy as np
 
 def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
                                 rnn_size, fnn_size, weights):
@@ -49,9 +49,11 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
     doa  = Conv2D(filters=1, padding='same')(doa) # B, 1, 128, 22
     sed  = Conv2D(filters=1, padding='same')(sed) # B, 1, 128, 11
 
-    doa = Activation('linear', name='doa_out')(doa)[0,2,3]
-    sed = Activation('sigmoid', name='sed_out')(sed)[0,2,3]
-
+    doa = Activation('linear', name='doa_out')(doa)
+    sed = Activation('sigmoid', name='sed_out')(sed)
+    
+    doa = np.squeeze(doa,axis=1)
+    sed = np.squeeze(sed,axis=1)
     model = Model(inputs=spec_start, outputs=[sed, doa])
     model.compile(optimizer=Adam(), loss=['binary_crossentropy', 'mse'], loss_weights=weights)
 
