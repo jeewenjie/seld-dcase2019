@@ -10,12 +10,18 @@ import cls_feature_class
 import cls_data_generator
 from metrics import evaluation_metrics
 import keras_model
+import keras
 from keras.models import load_model
 import parameter
 import time
+import tensorflow as tf
 
 plot.switch_backend('agg')
 
+
+config = tf.ConfigProto( device_count = {'GPU':2} ) 
+sess = tf.Session(config=config) 
+keras.backend.set_session(sess)
 
 def collect_test_labels(_data_gen_test, _data_out, quick_test):
     # Collecting ground truth for test data
@@ -249,7 +255,7 @@ def main(argv):
         )
 
         print('\nLoading the best model and predicting results on the testing split')
-        model = load_model('{}_model.h5'.format(unique_name))
+        model = load_model('{}_model.h5'.format(unique_name),custom_objects={"keras": keras})
         pred_test = model.predict_generator(
             generator=data_gen_test.generate(),
             steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
